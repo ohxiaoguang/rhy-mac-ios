@@ -13,6 +13,7 @@ NX_PHONE_PADS=0 NX_SHADER_CACHE=work/shaders-macosx ./target/release/nxhost
 | 环境变量 | 用途 |
 | --- | --- |
 | `NX_FPS=1` | 每秒输出帧率 |
+| `NX_SHOW_FPS=1` | 在游戏画面左上角显示每秒更新的 FPS；两端启动页可直接勾选 |
 | `NX_AUTOINPUT='4:A,7:A,10:A'` | 按相对秒数产生内部手柄短按，不是物理触屏测试 |
 | `NX_INPUT_FILE=work/pad.txt` | 轮询一次性短按文件，内容如 `A`、`DOWN`、`PLUS` |
 | `NX_DUMP_AT='3,10,20'` | 同步转存呈现方向的画面，影响帧时间和缓冲 |

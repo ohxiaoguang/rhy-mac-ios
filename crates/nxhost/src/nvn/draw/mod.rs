@@ -610,8 +610,9 @@ pub fn sync_wait(sync: u64) -> u64 {
 
 fn count_fps() {
     static ON: LazyLock<bool> = LazyLock::new(|| std::env::var_os("NX_FPS").is_some());
+    static SHOW: LazyLock<bool> = LazyLock::new(|| std::env::var("NX_SHOW_FPS").is_ok_and(|v| v == "1"));
     static STATS: Mutex<Option<(std::time::Instant, std::time::Instant, u32, f32)>> = Mutex::new(None);
-    if !*ON {
+    if !*ON && !*SHOW {
         return;
     }
     let now = std::time::Instant::now();
@@ -621,7 +622,9 @@ fn count_fps() {
     *last = now;
     *n += 1;
     if now.duration_since(*start).as_secs() >= 1 {
-        eprintln!("[fps] {:.1} fps, worst frame {worst:.1} ms", *n as f32 / now.duration_since(*start).as_secs_f32());
+        let fps = *n as f32 / now.duration_since(*start).as_secs_f32();
+        if *ON { eprintln!("[fps] {fps:.1} fps, worst frame {worst:.1} ms"); }
+        if *SHOW { crate::gfx::overlay::update_fps(fps); }
         *s = Some((now, now, 0, 0.0));
     }
 }

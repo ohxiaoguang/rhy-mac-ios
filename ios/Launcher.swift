@@ -18,6 +18,8 @@ public func rhythmAudioSession() {
 private let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
 private struct RhythmLauncher: View {
     let play: @convention(c) () -> Void
+    @AppStorage("handheld") private var handheld = true
+    @AppStorage("showFPS") private var showFPS = false
     @State private var importing = false
     @State private var importingFolder = false
     @State private var copying = false
@@ -29,6 +31,8 @@ private struct RhythmLauncher: View {
         }
     }
     private func startGame() {
+        setenv("NX_HANDHELD", handheld ? "1" : "0", 1)
+        setenv("NX_SHOW_FPS", showFPS ? "1" : "0", 1)
         rhythmAudioSession()
         launcher?.willMove(toParent: nil)
         launcher?.view.removeFromSuperview()
@@ -37,25 +41,33 @@ private struct RhythmLauncher: View {
         play()
     }
     var body: some View {
-        HStack(spacing: 40) {
-            VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: "waveform.circle.fill").font(.system(size: 72)).foregroundStyle(.orange)
-                Text("Rhythm").font(.largeTitle.bold())
-                Text("Rhythm Heaven Groove · 原生兼容层").foregroundStyle(.secondary)
-                Text("技术研究版本：兼容性验证范围见项目文档。\n需要与构建时一致的 1.0.0 游戏镜像。").font(.callout)
+        ScrollView {
+            HStack(spacing: 40) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Image(systemName: "waveform.circle.fill").font(.system(size: 72)).foregroundStyle(.orange)
+                    Text("Rhythm").font(.largeTitle.bold())
+                    Text("Rhythm Heaven Groove · 原生兼容层").foregroundStyle(.secondary)
+                    Text("技术研究版本：兼容性验证范围见项目文档。\n需要与构建时一致的 1.0.0 游戏镜像。").font(.callout)
+                }
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("游戏文件").font(.title2.bold())
+                    Text("导入 XCI 和 prod.keys；Firmware 文件夹也可通过 Finder 文件共享复制。资源与存档保存在本机 Documents 中。")
+                    Button("导入 XCI / prod.keys") { importing = true }.disabled(copying)
+                    Button("导入 Firmware 文件夹") { importingFolder = true }.disabled(copying)
+                    if copying { ProgressView("正在复制，请保持应用打开…") }
+                    Text(message).font(.caption).textSelection(.enabled)
+                    Picker("启动模式", selection: $handheld) {
+                        Text("掌机模式").tag(true)
+                        Text("底座模式").tag(false)
+                    }.pickerStyle(.segmented).disabled(copying)
+                    Toggle("显示 FPS", isOn: $showFPS).disabled(copying)
+                    Button("启动游戏", action: startGame).buttonStyle(.borderedProminent).disabled(!ready || copying)
+                    Text("日志：Files → Rhythm → work → nxhost.log").font(.caption).foregroundStyle(.secondary)
+                }.frame(maxWidth: 440)
             }
-            VStack(alignment: .leading, spacing: 16) {
-                Text("游戏文件").font(.title2.bold())
-                Text("导入 XCI 和 prod.keys；Firmware 文件夹也可通过 Finder 文件共享复制。资源与存档保存在本机 Documents 中。")
-                Button("导入 XCI / prod.keys") { importing = true }.disabled(copying)
-                Button("导入 Firmware 文件夹") { importingFolder = true }.disabled(copying)
-                if copying { ProgressView("正在复制，请保持应用打开…") }
-                Text(message).font(.caption).textSelection(.enabled)
-                Button("启动游戏", action: startGame).buttonStyle(.borderedProminent).disabled(!ready || copying)
-                Text("日志：Files → Rhythm → work → nxhost.log").font(.caption).foregroundStyle(.secondary)
-            }.frame(maxWidth: 440)
+            .padding(32).frame(maxWidth: .infinity)
         }
-        .padding(32).frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             scan()
             if ready && ProcessInfo.processInfo.environment["NX_AUTOSTART"] == "1" {

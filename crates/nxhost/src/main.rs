@@ -203,8 +203,9 @@ fn apply_launcher_settings() {
     if field("motion_controls").as_deref() == Some("true") {
         unsafe { std::env::set_var("NX_MOTION", "1") };
     }
-    if field("handheld").as_deref() != Some("false") {
-        unsafe { std::env::set_var("NX_HANDHELD", "1") };
+    if std::env::var_os("NX_HANDHELD").is_none() {
+        let handheld = if field("handheld").as_deref() == Some("false") { "0" } else { "1" };
+        unsafe { std::env::set_var("NX_HANDHELD", handheld) };
     }
     if field("phone_pads").as_deref() == Some("true") {
         unsafe { std::env::set_var("NX_PHONE_PADS", "1") };

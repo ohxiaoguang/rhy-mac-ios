@@ -107,7 +107,7 @@ Logs are in Files → Rhythm → `work/nxhost.log`, and saves are in `work/save/
 
 ## Controls
 
-GameController pads are supported; on iOS, on-screen touch buttons appear when no controller is connected. Mac keyboard mapping:
+GameController pads are supported; on iOS, on-screen touch buttons appear when no controller is connected. The left pad has four directional buttons and supports simultaneous input with the right-side buttons. Mac keyboard mapping:
 
 | Key | Game input |
 | --- | --- |
@@ -121,9 +121,13 @@ GameController pads are supported; on iOS, on-screen touch buttons appear when n
 | Tab / = | + / pause |
 | - | −, skips practice according to the game's rules during practice |
 
-Handheld mode at 1280×720 by default. For TV mode, set `NX_HANDHELD=0` in the host environment; the first entry may require completing the game's latency calibration.
+Both launchers offer a **Handheld / Docked** mode selector and a **Show FPS** toggle. Preferences are saved for the next launch. FPS appears in the top-left corner of the game window and updates once a second; it is off by default.
+
+Handheld mode reports 1280×720; docked mode reports 1920×1080 and may require the game's TV latency calibration. Changes take effect at the next game launch. For command-line use, `NX_HANDHELD=0` selects docked mode and `NX_SHOW_FPS=1` enables the FPS overlay.
 
 ## Status and limitations
+
+0.3.0 adds saved launcher preferences for handheld/docked mode and the FPS overlay, plus four directional touch buttons in place of the iOS virtual stick. Mac launcher persistence and the FPS overlay have been checked in a running game; the updated iOS controls still need device testing. See [validation scope](docs/VALIDATION.md).
 
 0.2.0 fixed the observed atlas misalignment, leftover text, muted audio, runaway frame rate and save-append issues. On Mac, the first single-player stage has been checked from practice through the actual game, the results screen and the return, at roughly 60 fps; on iPad, launch plus video and audio output have been checked, and the user confirmed basic playability by hand.
 

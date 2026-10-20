@@ -37,8 +37,8 @@ for directory, pattern in [('crates', '*.rs'), ('tools', '*.py'), ('launcher', '
     sources.extend((root / directory).rglob(pattern))
 sources.extend(root / p for p in ['Cargo.toml', 'Cargo.lock', 'ios/project.yml', 'ios/Info.plist', 'ios/Rhythm.entitlements'])
 manifest = {
-    'version': '0.2.0',
-    'status': 'macOS first stage tested; iOS device validation pending',
+    'version': '0.3.0',
+    'status': 'launcher/input update; see docs/VALIDATION.md for tested versions',
     'modules': json.loads((root / 'work/game/patched/game.json').read_text()),
     'ios_segments': segments, 'artifacts': artifacts,
     'source_sha256': {str(p.relative_to(root)): digest(p) for p in sorted(set(sources))},

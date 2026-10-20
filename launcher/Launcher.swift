@@ -9,6 +9,12 @@ private let logURL = workspace.appendingPathComponent("rhythm.log")
 
 final class LauncherModel: ObservableObject {
     @Published var folder = UserDefaults.standard.string(forKey: "gameFolder") ?? ""
+    @Published var handheld = UserDefaults.standard.object(forKey: "handheld") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(handheld, forKey: "handheld") }
+    }
+    @Published var showFPS = UserDefaults.standard.bool(forKey: "showFPS") {
+        didSet { UserDefaults.standard.set(showFPS, forKey: "showFPS") }
+    }
     @Published var busy = false
     @Published var ready = false
     @Published var status = "请选择包含 XCI、prod.keys 和 Firmware 的目录。"
@@ -78,6 +84,8 @@ final class LauncherModel: ObservableObject {
             let p=Process();p.executableURL=tool("nxhost");p.currentDirectoryURL=workspace
             p.arguments=["--base",base.path,"--keys",keys.path,"--firmware",firmware.path]
             var environment=ProcessInfo.processInfo.environment;environment["NX_PHONE_PADS"]="0"
+            environment["NX_HANDHELD"] = handheld ? "1" : "0"
+            environment["NX_SHOW_FPS"] = showFPS ? "1" : "0"
             environment["NX_SHADER_CACHE"]=workspace.appendingPathComponent("work/shaders-macosx").path;p.environment=environment
             let log=try FileHandle(forWritingTo:logURL);try log.seekToEnd();p.standardOutput=log;p.standardError=log
             p.terminationHandler={ [weak self] p in try? log.close();DispatchQueue.main.async {self?.busy=false;self?.status="游戏进程已结束（\(p.terminationStatus)）。日志保存在本机。"}}
@@ -93,6 +101,13 @@ final class LauncherModel: ObservableObject {
                 HStack {Image(systemName:"waveform.circle.fill").font(.system(size:56)).foregroundStyle(.orange);VStack(alignment:.leading){Text("Rhythm").font(.largeTitle.bold());Text("Rhythm Heaven Groove · macOS").foregroundStyle(.secondary)}}
                 Text("选择游戏文件目录，准备后启动。X / Return 确认，Z / Backspace 返回；也支持游戏手柄。")
                 Text(model.folder).font(.system(.callout,design:.monospaced)).textSelection(.enabled)
+                HStack(spacing: 24) {
+                    Picker("启动模式", selection: $model.handheld) {
+                        Text("掌机模式").tag(true)
+                        Text("底座模式").tag(false)
+                    }.pickerStyle(.segmented)
+                    Toggle("显示 FPS", isOn: $model.showFPS).toggleStyle(.checkbox)
+                }.disabled(model.busy)
                 HStack {Button("选择游戏目录",action:model.choose);Button("准备游戏",action:model.prepare);Button("启动游戏",action:model.launch).buttonStyle(.borderedProminent).disabled(!model.ready)}.disabled(model.busy)
                 if model.busy {ProgressView()}
                 Text(model.status).foregroundStyle(.secondary).textSelection(.enabled)

@@ -1,6 +1,7 @@
+// Modified for rhy-mac-ios on 2026-10-20; see NOTICE and docs/PROVENANCE.md.
 // Mush8 - touch.rs
 // Constantin Clerc (c22dev) - 0.1
-use crate::input::{self, A, B, L, MINUS, PLUS, R, X, Y};
+use crate::input::{self, A, B, DOWN, L, LEFT, MINUS, PLUS, R, RIGHT, UP, X, Y};
 use objc2::rc::Retained;
 use objc2::runtime::NSObject;
 use objc2::{MainThreadMarker, MainThreadOnly, define_class, msg_send};
@@ -11,11 +12,13 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::Ordering::Relaxed;
 
-const BUTTONS: [(&str, u64); 8] = [("A", A), ("B", B), ("X", X), ("Y", Y), ("L", L), ("R", R), ("+", PLUS), ("−", MINUS)];
+const BUTTONS: [(&str, u64); 12] = [
+    ("A", A), ("B", B), ("X", X), ("Y", Y), ("L", L), ("R", R), ("+", PLUS), ("−", MINUS),
+    ("▲", UP), ("▼", DOWN), ("◀", LEFT), ("▶", RIGHT),
+];
 const FILL: f64 = 0.35;
 const RING: f64 = 0.8;
 const PRESSED: f64 = 0.7;
-const STICK_REACH: f64 = 2.5;
 
 struct Control {
     bit: u64,
@@ -25,20 +28,9 @@ struct Control {
     view: Retained<UIView>,
 }
 
-struct Stick {
-    base: Retained<UIView>,
-    knob: Retained<UIView>,
-    home: CGPoint,
-    origin: CGPoint,
-    radius: f64,
-    knob_radius: f64,
-    touch: Option<usize>,
-}
-
 struct Pad {
     view: Retained<TouchView>,
     controls: Vec<Control>,
-    stick: Stick,
     held: HashMap<usize, u64>,
     shown: bool,
     screen: HashSet<usize>,
@@ -112,10 +104,6 @@ fn circle(mtm: MainThreadMarker, parent: &UIView, title: &str, fill: (f64, f64),
     v
 }
 
-fn place(v: &UIView, c: CGPoint, r: f64) {
-    place_capsule(v, c, r, 0.0);
-}
-
 fn place_capsule(v: &UIView, c: CGPoint, r: f64, half: f64) {
     let w = 2.0 * (r + half);
     v.setFrame(CGRect::new(CGPoint::new(c.x - r - half, c.y - r), CGSize::new(w, 2.0 * r)));
@@ -132,17 +120,13 @@ pub fn install(parent: &UIView, mtm: MainThreadMarker) {
     view.setAutoresizingMask(UIViewAutoresizing::FlexibleWidth | UIViewAutoresizing::FlexibleHeight);
     parent.addSubview(&view);
     let controls = BUTTONS.iter().map(|&(t, bit)| Control { bit, center: CGPoint::new(0.0, 0.0), radius: 0.0, half: 0.0, view: circle(mtm, &view, t, (0.0, FILL), RING) }).collect();
-    let base = circle(mtm, &view, "", (0.0, 0.25), 0.6);
-    let knob = circle(mtm, &view, "", (1.0, 0.6), RING);
-    let zero = CGPoint::new(0.0, 0.0);
-    let stick = Stick { base, knob, home: zero, origin: zero, radius: 0.0, knob_radius: 0.0, touch: None };
-    let p = Pad { view, controls, stick, held: HashMap::new(), shown: true, screen: HashSet::new() };
+    let p = Pad { view, controls, held: HashMap::new(), shown: true, screen: HashSet::new() };
     show_controls(&p, false);
     PAD.with(|pad| *pad.borrow_mut() = Some(Pad { shown: false, ..p }));
 }
 
 fn show_controls(p: &Pad, visible: bool) {
-    for v in p.controls.iter().map(|c| &c.view).chain([&p.stick.base, &p.stick.knob]) {
+    for v in p.controls.iter().map(|c| &c.view) {
         v.setHidden(!visible);
     }
 }
@@ -155,7 +139,6 @@ pub fn set_visible(visible: bool) {
         p.shown = visible;
         if !visible {
             p.held.clear();
-            p.stick.touch = None;
             publish(p);
         }
     });
@@ -171,6 +154,8 @@ fn layout() {
         let u = b.height.min(b.width) / 10.0;
         let face = CGPoint::new(right - 3.0 * u, b.height - 3.2 * u);
         let at = |dx: f64, dy: f64| CGPoint::new(face.x + dx, face.y + dy);
+        let dpad = CGPoint::new(left + 3.2 * u, b.height - 3.2 * u);
+        let direction = |dx: f64, dy: f64| (CGPoint::new(dpad.x + dx * u, dpad.y + dy * u), 0.7 * u, 0.0);
         let spots = [
             (at(1.35 * u, 0.0), 0.75 * u, 0.0),
             (at(0.0, 1.35 * u), 0.75 * u, 0.0),
@@ -180,6 +165,10 @@ fn layout() {
             (CGPoint::new(right - 2.6 * u, 1.2 * u), 0.75 * u, 1.0 * u),
             (CGPoint::new(b.width / 2.0 + 1.2 * u, 0.9 * u), 0.5 * u, 0.0),
             (CGPoint::new(b.width / 2.0 - 1.2 * u, 0.9 * u), 0.5 * u, 0.0),
+            direction(0.0, -1.25),
+            direction(0.0, 1.25),
+            direction(-1.25, 0.0),
+            direction(1.25, 0.0),
         ];
         for (c, (center, radius, half)) in p.controls.iter_mut().zip(spots) {
             c.center = center;
@@ -187,15 +176,6 @@ fn layout() {
             c.half = half;
             place_capsule(&c.view, center, radius, half);
         }
-        let s = &mut p.stick;
-        s.home = CGPoint::new(left + 3.2 * u, b.height - 3.2 * u);
-        s.radius = 1.6 * u;
-        s.knob_radius = 0.7 * u;
-        if s.touch.is_none() {
-            s.origin = s.home;
-        }
-        place(&s.base, s.origin, s.radius);
-        place(&s.knob, s.origin, s.knob_radius);
     });
 }
 
@@ -209,20 +189,8 @@ fn handle(view: &TouchView, touches: &NSSet<UITouch>, phase: Phase) {
             let pt = t.locationInView(Some(view));
             match phase {
                 Phase::Began => {
-                    let hit = p
-                        .controls
-                        .iter()
-                        .map(|c| (c, ((pt.x - c.center.x).abs() - c.half).max(0.0).hypot(pt.y - c.center.y) / c.radius))
-                        .filter(|(_, d)| *d < 1.3)
-                        .min_by(|a, b| a.1.total_cmp(&b.1));
-                    let reach = ((pt.x - p.stick.home.x).powi(2) + (pt.y - p.stick.home.y).powi(2)).sqrt() / p.stick.radius;
-                    if let Some((c, _)) = hit.filter(|_| p.shown) {
-                        p.held.insert(id, c.bit);
-                    } else if p.shown && p.stick.touch.is_none() && reach < STICK_REACH {
-                        p.stick.touch = Some(id);
-                        p.stick.origin = pt;
-                        place(&p.stick.base, pt, p.stick.radius);
-                        move_stick(&p.stick, pt);
+                    if let Some(bit) = hit_button(p, pt).filter(|_| p.shown) {
+                        p.held.insert(id, bit);
                     } else if !super::ios::CONTROLLER_MODE.load(Relaxed) {
                         let at = super::screen_point(pt.x, pt.y, b.width, b.height);
                         if super::on_screen(at) {
@@ -232,8 +200,11 @@ fn handle(view: &TouchView, touches: &NSSet<UITouch>, phase: Phase) {
                     }
                 }
                 Phase::Moved => {
-                    if p.stick.touch == Some(id) {
-                        move_stick(&p.stick, pt);
+                    if p.held.contains_key(&id) {
+                        // Keep ownership until release, including outside the buttons,
+                        // so sliding off a direction releases it without a screen tap.
+                        let bit = if p.shown { hit_button(p, pt).unwrap_or(0) } else { 0 };
+                        p.held.insert(id, bit);
                     } else if p.screen.contains(&id) {
                         input::screen_touch(id, Some(super::screen_point(pt.x, pt.y, b.width, b.height)));
                     }
@@ -243,12 +214,6 @@ fn handle(view: &TouchView, touches: &NSSet<UITouch>, phase: Phase) {
                     if p.screen.remove(&id) {
                         input::screen_touch(id, None);
                     }
-                    if p.stick.touch == Some(id) {
-                        p.stick.touch = None;
-                        p.stick.origin = p.stick.home;
-                        place(&p.stick.base, p.stick.home, p.stick.radius);
-                        move_stick(&p.stick, p.stick.home);
-                    }
                 }
             }
         }
@@ -256,23 +221,19 @@ fn handle(view: &TouchView, touches: &NSSet<UITouch>, phase: Phase) {
     });
 }
 
-fn move_stick(s: &Stick, pt: CGPoint) {
-    let (mut dx, mut dy) = (pt.x - s.origin.x, pt.y - s.origin.y);
-    let len = (dx * dx + dy * dy).sqrt();
-    if len > s.radius {
-        dx *= s.radius / len;
-        dy *= s.radius / len;
-    }
-    place(&s.knob, CGPoint::new(s.origin.x + dx, s.origin.y + dy), s.knob_radius);
-    input::set_touch_stick((dx / s.radius) as f32, (-dy / s.radius) as f32);
+fn hit_button(p: &Pad, pt: CGPoint) -> Option<u64> {
+    p.controls.iter()
+        .filter(|c| c.radius > 0.0)
+        .map(|c| (c.bit, ((pt.x - c.center.x).abs() - c.half).max(0.0).hypot(pt.y - c.center.y) / c.radius))
+        .filter(|(_, d)| *d < 1.3)
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .map(|(bit, _)| bit)
 }
 
 fn publish(p: &Pad) {
     let held = p.held.values().fold(0, |m, b| m | b);
     input::TOUCH_BUTTONS.store(held, Relaxed);
-    if p.stick.touch.is_none() {
-        input::set_touch_stick(0.0, 0.0);
-    }
+    input::set_touch_stick(0.0, 0.0);
     for c in &p.controls {
         let color = if held & c.bit != 0 { UIColor::colorWithWhite_alpha(1.0, PRESSED) } else { UIColor::colorWithWhite_alpha(0.0, FILL) };
         c.view.setBackgroundColor(Some(&color));

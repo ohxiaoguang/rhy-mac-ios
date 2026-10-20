@@ -94,8 +94,8 @@ def macos():
     for name in ['nxhost','nxfs','nxpatch']: shutil.copy2(TOOL/name,bin/name)
     run('xcrun','swiftc','-O','-parse-as-library','-target','arm64-apple-macos14','-module-cache-path',ROOT/'target/ModuleCache','launcher/Launcher.swift','-o',bin/'Launcher')
     info={'CFBundleName':'Rhythm','CFBundleDisplayName':'Rhythm','CFBundleIdentifier':'dev.local.rhythm',
-          'CFBundleExecutable':'Launcher','CFBundlePackageType':'APPL','CFBundleShortVersionString':'0.2.0',
-          'CFBundleVersion':'2','LSMinimumSystemVersion':'14.0','NSHighResolutionCapable':True,
+          'CFBundleExecutable':'Launcher','CFBundlePackageType':'APPL','CFBundleShortVersionString':'0.3.0',
+          'CFBundleVersion':'3','LSMinimumSystemVersion':'14.0','NSHighResolutionCapable':True,
           'LSApplicationCategoryType':'public.app-category.music-games'}
     with (app/'Contents/Info.plist').open('wb') as out: plistlib.dump(info,out)
     shutil.copy2(PATCHED/'game.json',res/'game.json')

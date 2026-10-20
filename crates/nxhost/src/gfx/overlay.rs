@@ -1,3 +1,4 @@
+// Modified for rhy-mac-ios on 2026-10-20; see NOTICE and docs/PROVENANCE.md.
 // Mush8 - overlay.rs
 // Constantin Clerc (c22dev) - 0.1
 use objc2::MainThreadMarker;
@@ -41,6 +42,25 @@ mod ui {
 
     thread_local! {
         static PANEL: RefCell<Option<Panel>> = const { RefCell::new(None) };
+        static FPS: RefCell<Option<Retained<NSTextField>>> = const { RefCell::new(None) };
+    }
+
+    pub fn fps(mtm: MainThreadMarker, value: f32) {
+        let window = WINDOW.load(Relaxed);
+        if window == 0 { return; }
+        let Some(root) = unsafe { &*(window as *const NSWindow) }.contentView() else { return };
+        FPS.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let l = slot.get_or_insert_with(|| {
+                let l = label(mtm, "", 14.0, true, NSRect::new(NSPoint::new(12.0, root.bounds().size.height - 40.0), NSSize::new(110.0, 28.0)));
+                l.setDrawsBackground(true);
+                l.setBackgroundColor(Some(&NSColor::colorWithWhite_alpha(0.0, 0.65)));
+                l.setAutoresizingMask(objc2_app_kit::NSAutoresizingMaskOptions::ViewMinYMargin | objc2_app_kit::NSAutoresizingMaskOptions::ViewMaxXMargin);
+                root.addSubview(&l);
+                l
+            });
+            l.setStringValue(&NSString::from_str(&format!("{value:.1} FPS")));
+        });
     }
 
     fn label(mtm: MainThreadMarker, text: &str, size: f64, bold: bool, frame: NSRect) -> Retained<NSTextField> {
@@ -154,6 +174,24 @@ mod ui {
 
     thread_local! {
         static PANEL: RefCell<Option<Panel>> = const { RefCell::new(None) };
+        static FPS: RefCell<Option<Retained<UILabel>>> = const { RefCell::new(None) };
+    }
+
+    pub fn fps(mtm: MainThreadMarker, value: f32) {
+        let Some(root) = super::super::ios::root_view() else { return };
+        FPS.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let l = slot.get_or_insert_with(|| {
+                let l = label(mtm, "", 14.0, true, CGRect::new(CGPoint::new(0.0, 0.0), CGSize::new(110.0, 28.0)));
+                l.setUserInteractionEnabled(false);
+                l.setBackgroundColor(Some(&UIColor::colorWithWhite_alpha(0.0, 0.65)));
+                root.addSubview(&l);
+                l
+            });
+            let insets = root.safeAreaInsets();
+            l.setFrame(CGRect::new(CGPoint::new(insets.left + 12.0, insets.top + 8.0), CGSize::new(110.0, 28.0)));
+            l.setText(Some(&NSString::from_str(&format!("{value:.1} FPS"))));
+        });
     }
 
     fn label(mtm: MainThreadMarker, text: &str, size: f64, bold: bool, frame: CGRect) -> Retained<UILabel> {
@@ -222,6 +260,11 @@ mod ui {
 
 const CONFIRM: u64 = 1 | 1 << 10;
 const CANCEL: u64 = 1 << 1;
+
+/// Native HUD updated once a second; it does not modify the game's render target.
+pub fn update_fps(value: f32) {
+    on_main(move |mtm| ui::fps(mtm, value));
+}
 
 pub fn controller_screen(min: usize, max: usize) -> Option<usize> {
     let connected = || crate::input::SLOT_NAMES.lock().unwrap().iter().filter(|n| n.is_some()).count();
