@@ -1,0 +1,12 @@
+# Modified for rhy-mac-ios on 2026-10-20; see NOTICE and docs/PROVENANCE.md.
+[package]
+name = "nxscan"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+
+[dependencies]
+anyhow = "1.0.104"
+nxfs = { version = "0.1.0", path = "../nxfs" }
+yaxpeax-arch = "0.3.2"
+yaxpeax-arm = "0.5.0"

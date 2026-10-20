@@ -1,0 +1,23 @@
+include:
+  - project.yml
+targets:
+  RhythmDeviceTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [DeviceTests]
+    dependencies:
+      - target: Rhythm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.local.rhythm.DeviceTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Rhythm
+        CODE_SIGN_STYLE: Automatic
+schemes:
+  RhythmDeviceTests:
+    build:
+      targets:
+        Rhythm: all
+        RhythmDeviceTests: [test]
+    test:
+      targets: [RhythmDeviceTests]

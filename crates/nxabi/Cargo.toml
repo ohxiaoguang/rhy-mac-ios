@@ -1,0 +1,8 @@
+# Modified for rhy-mac-ios on 2026-10-20; see NOTICE and docs/PROVENANCE.md.
+[package]
+name = "nxabi"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+
+[dependencies]

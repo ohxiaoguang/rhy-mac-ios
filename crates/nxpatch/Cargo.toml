@@ -1,0 +1,15 @@
+# Modified for rhy-mac-ios on 2026-10-20; see NOTICE and docs/PROVENANCE.md.
+[package]
+name = "nxpatch"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+
+[dependencies]
+anyhow = "1.0.104"
+capstone = "0.14.0"
+clap = { version = "4.6.7", features = ["derive"] }
+hex = "0.4.3"
+nxabi = { version = "0.1.0", path = "../nxabi" }
+nxfs = { version = "0.1.0", path = "../nxfs" }
+unicorn-engine = "2.1.5"

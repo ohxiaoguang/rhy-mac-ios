@@ -1,0 +1,24 @@
+rhy-mac-ios
+
+This project is a modified derivative of Mush8.
+Mush8: https://github.com/c22dev/mush8
+Original source notices credit Constantin Clerc (c22dev).
+The original author notices are retained. The project is distributed under
+GNU GPL version 3; see LICENSE.
+
+Compatibility adaptations, launchers, tooling and documentation for this
+project were added/modified in 2026. Details are in docs/PROVENANCE.md.
+This project is not an official Mush8 release.
+
+Parts of the CPU/manual audio renderer bridge are adapted from nxnative:
+https://github.com/seedds/nxnative
+Copyright (c) 2026 jhaizhou
+MIT license retained in third_party/nxnative/LICENSE.
+
+D2R Mobile was consulted as an architectural reference. Dependency packages
+are obtained separately through Cargo and retain their own licenses.
+
+Nintendo, Apple and game names are owned by their respective rights holders.
+This source distribution contains no game, firmware, cryptographic key,
+extracted game module, generated game shader, gameplay recording or signed
+application. The source-code licenses do not grant rights to those materials.
