@@ -1,37 +1,39 @@
 # rhy-mac-ios
 
-一个面向 Apple Silicon macOS 和 iOS/iPadOS 的 ARM64 原生兼容层研究项目，当前适配 **Rhythm Heaven Groove 1.0.0**。基于 [Mush8](https://github.com/c22dev/mush8)，参考 [D2R Mobile](https://github.com/jhaizhou-ops/d2r-mobile) 的双端组织方式，以及 [nxnative](https://github.com/seedds/nxnative) 的纹理布局和音频实现。
+**English** | [简体中文](README.zh-CN.md)
 
-本仓库用于分享兼容层、离线指令改写和 Metal 图形适配的技术。**仅发布源码和构建工具，不提供游戏、密钥、固件、游戏派生代码或可直接运行的安装包。** 运行需要自行准备有权使用的文件；本项目不提供这些文件的下载、提取或获取教程。
+An ARM64 native compatibility-layer research project for Apple Silicon macOS and iOS/iPadOS, currently targeting **Rhythm Heaven Groove 1.0.0**. It is based on [Mush8](https://github.com/c22dev/mush8), follows the two-platform organization of [D2R Mobile](https://github.com/jhaizhou-ops/d2r-mobile), and draws on the texture layout and audio implementation of [nxnative](https://github.com/seedds/nxnative).
 
-## 它是如何工作的？
+This repository is for sharing techniques around the compatibility layer, offline instruction rewriting and Metal graphics adaptation. **Only source code and build tooling are published — no games, keys, firmware, game-derived code or ready-to-run installers.** Running it requires files you are entitled to use; this project does not provide downloads, extraction steps or acquisition instructions for them.
 
-Switch 和 Apple Silicon 都使用 ARM64。`nxpatch` 离线改写不能直接在 Apple 用户态执行的指令；`nxhost` 实现游戏依赖的系统服务、文件、存档、输入和音频接口，并把 NVN 图形调用转换为 Metal。着色器由本地工具翻译和编译。
+## How does it work?
 
-macOS 在启动时装载本地改写后的程序。iOS 版本在构建时将改写模块放入 Mach-O 的只读可执行段，不在设备上使用 JIT 生成游戏代码。因此，**本地生成的 IPA 含有来自用户游戏文件的代码，即使没有携带原始 XCI，也不属于可直接公开发布的纯源码产物。** 本仓库不上传这些产物。
+The Switch and Apple Silicon both use ARM64. `nxpatch` rewrites, offline, the instructions that cannot execute directly in Apple user space; `nxhost` implements the system services, file, save, input and audio interfaces the game depends on, and translates NVN graphics calls into Metal. Shaders are translated and compiled by local tools.
 
-## 系统要求
+macOS loads the locally rewritten program at launch. For iOS, the rewritten modules are placed into the read-only executable segment of the Mach-O at build time; no JIT is used on the device to generate game code. As a result, **an IPA built locally contains code derived from your game files and is not a pure source artifact that can be published publicly, even if it carries no original XCI.** This repository does not upload such artifacts.
 
-### 运行
+## Requirements
 
-| 平台 | 当前部署目标 | 硬件及说明 |
+### Running
+
+| Platform | Current deployment target | Hardware and notes |
 | --- | --- | --- |
-| macOS | **macOS 14.0 或更高** | Apple Silicon（M 系列）；不支持 Intel Mac |
-| iPhone | **iOS 26.0 或更高** | ARM64 真机；需要有效签名，尚无独立 iPhone 测试结论 |
-| iPad | **iPadOS 26.0 或更高** | ARM64 真机；已在 iPad Air（M2）做运行检查并由使用者手动验收 |
+| macOS | **macOS 14.0 or later** | Apple Silicon (M series); Intel Macs are not supported |
+| iPhone | **iOS 26.0 or later** | ARM64 physical device; valid signing required; no standalone iPhone test conclusions yet |
+| iPad | **iPadOS 26.0 or later** | ARM64 physical device; runtime checked on an iPad Air (M2) and manually accepted by the user |
 
-以上是构建配置中的最低版本，不表示所有设备、系统小版本和关卡均已验证。建议使用至少 8 GB 内存的设备；这是容量建议，不是实测的最低内存要求。当前不支持 iOS 模拟器。
+The versions above are the minimums in the build configuration and do not mean that every device, minor OS release and stage has been verified. A device with at least 8 GB of memory is recommended; that is a capacity recommendation, not a measured minimum memory requirement. The iOS Simulator is not supported.
 
-已验证环境：Apple M1 / macOS 15.8；iPad Air（M2）/ iPadOS 27.0.1。详细范围见 [验证记录](docs/VALIDATION.md)。
+Validated environments: Apple M1 / macOS 15.8; iPad Air (M2) / iPadOS 27.0.1. See the [validation record](docs/VALIDATION.md) (in Chinese) for the detailed scope.
 
-### 从源码构建
+### Building from source
 
-- Apple Silicon Mac 和完整 Xcode，已验证 **Xcode 26.3**。Xcode 26.3 要求构建主机运行 **macOS 15.6 或更高的受支持版本**，与应用本身的 macOS 14 部署目标不同；其他 Xcode 版本请核对 [Apple 的系统要求](https://developer.apple.com/xcode/system-requirements/)。
-- Rust / Cargo；Mac 构建验证版本为 Rust 1.99.1，iOS 脚本固定使用 Rust 1.98.1。
-- Python 3、CMake、XcodeGen，以及 Xcode 的 Metal 编译工具。
-- iOS 构建需要 `aarch64-apple-ios` 目标；安装真机需要自己的开发签名或其他受支持的签名流程。
+- An Apple Silicon Mac and a full Xcode; **Xcode 26.3** has been verified. Xcode 26.3 requires the build host to run **a supported version of macOS 15.6 or later**, which differs from the app's own macOS 14 deployment target; for other Xcode versions check [Apple's system requirements](https://developer.apple.com/xcode/system-requirements/).
+- Rust / Cargo; macOS builds are verified with Rust 1.99.1, and the iOS scripts are pinned to Rust 1.98.1.
+- Python 3, CMake, XcodeGen, and Xcode's Metal compiler tools.
+- iOS builds need the `aarch64-apple-ios` target; installing on a device requires your own development signing or another supported signing flow.
 
-依赖准备示例（已有的工具无需重复安装）：
+Example dependency setup (skip anything you already have):
 
 ```sh
 brew install cmake xcodegen
@@ -40,26 +42,26 @@ rustup target add aarch64-apple-ios --toolchain 1.98.1
 cargo fetch --locked
 ```
 
-Rust 请通过 [rustup](https://rustup.rs/) 安装。构建脚本使用离线 Cargo 模式，首次构建前需要完成依赖下载。若 Xcode 提示缺少 Metal 工具，请通过 Xcode 安装对应组件。
+Install Rust through [rustup](https://rustup.rs/). The build scripts use Cargo in offline mode, so dependencies must be fetched before the first build. If Xcode reports missing Metal tools, install the corresponding components through Xcode.
 
-## 本地文件
+## Local files
 
-当前仅支持标题 ID `0100D9F01D474000`、版本 `1.0.0` 的对应构建。工具还会校验模块构建标识；其他地区或更新版本不能仅凭文件名相同就认定兼容。
+Only the build matching title ID `0100D9F01D474000`, version `1.0.0`, is supported. The tools also verify the module build identifiers; other regions or newer versions are not compatible merely because the file name matches.
 
-在自己的游戏目录中准备：
+Prepare the following in your own game folder:
 
 ```text
 your-game-folder/
-  your-game.xci    # 目录中仅有一个 XCI，文件名不限
+  your-game.xci    # exactly one XCI in the folder, any file name
   prod.keys
   Firmware/
 ```
 
-仅使用你依法有权持有、处理和使用的文件。购买游戏不当然意味着获得所有复制、改写或分发权限，相关规则取决于适用法律和协议。不要向本仓库的 Issue、PR、附件或 Release 上传这些文件。
+Only use files you are lawfully entitled to hold, process and use. Owning a game does not automatically grant every right to copy, modify or redistribute it; the applicable rules depend on the law and agreements that apply. Do not upload these files to this repository's issues, pull requests, attachments or releases.
 
-## 构建
+## Build
 
-先克隆并配置自己的文件目录：
+Clone the repository and point it at your own file folder:
 
 ```sh
 git clone https://github.com/ohxiaoguang/rhy-mac-ios.git
@@ -68,7 +70,7 @@ cd rhy-mac-ios
 ./build.sh prepare
 ```
 
-`configure` 建立本地资源链接，`prepare` 从本地镜像提取模块并离线改写；不下载游戏，也不改写原始文件。
+`configure` creates the local resource links, and `prepare` extracts the modules from the local image and rewrites them offline. It does not download the game and does not modify the original files.
 
 ### macOS
 
@@ -77,9 +79,9 @@ cd rhy-mac-ios
 ./build.sh macos
 ```
 
-输出为 `build/Rhythm.app`。打开后选择自己的文件目录，点击“准备游戏”，完成后“启动游戏”。首次准备和着色器编译需要一些时间。
+The output is `build/Rhythm.app`. Open it, select your own file folder, click "Prepare Game", and then "Launch Game" once it finishes. The first preparation and shader compilation take a while.
 
-启动器的工作区、存档和日志位于 `~/Library/Application Support/Rhythm/`。命令行直接启动宿主时，工作区是当前目录下的 `work/`。
+The launcher's workspace, saves and logs live in `~/Library/Application Support/Rhythm/`. If you start the host directly from the command line, the workspace is `work/` in the current directory.
 
 ### iOS / iPadOS
 
@@ -88,75 +90,75 @@ cd rhy-mac-ios
 ./build.sh ios
 ```
 
-输出为本地 `build/Rhythm.ipa`，默认仅做临时签名，需要自行重签才能安装。也可以使用自己的开发团队签名构建：
+The output is a local `build/Rhythm.ipa`, ad-hoc signed by default, so you must re-sign it yourself before installing. You can also build with your own development team:
 
 ```sh
 TEAM=YOUR_TEAM_ID BUNDLE_ID=your.bundle.identifier ./build.sh ios --signed
-# 新设备需要出现在开发描述文件中时：
+# when a new device has to be added to the development provisioning profile:
 TEAM=YOUR_TEAM_ID BUNDLE_ID=your.bundle.identifier \
   ./build.sh ios --signed --device YOUR_DEVICE_UDID
 ```
 
-带 `--device` 的签名构建会允许 Xcode 注册指定设备并更新描述文件；构建脚本本身不会自动安装应用。
+A signed build with `--device` lets Xcode register the given device and update the provisioning profile; the build script itself does not install the app.
 
-安装后在 App 中导入自己的 XCI、`prod.keys` 和 `Firmware` 文件夹，也可通过 Finder 文件共享复制到应用 Documents。XCI 导入后保存为 `base.xci`。设备上需要与构建时一致的游戏版本。
+After installing, import your own XCI, `prod.keys` and `Firmware` folder in the app, or copy them into the app's Documents through Finder file sharing. An imported XCI is stored as `base.xci`. The game version on the device must match the one used at build time.
 
-日志位于 Files → Rhythm → `work/nxhost.log`，存档位于 `work/save/`。开发签名的期限、设备数量和能力限制由 Apple 的账户与签名策略决定。
+Logs are in Files → Rhythm → `work/nxhost.log`, and saves are in `work/save/`. The validity period, device count and capability limits of development signing are governed by Apple's account and signing policies.
 
-## 操作
+## Controls
 
-支持 GameController 手柄；iOS 在没有连接手柄时显示触屏按键。Mac 键盘映射如下：
+GameController pads are supported; on iOS, on-screen touch buttons appear when no controller is connected. Mac keyboard mapping:
 
-| 按键 | 游戏输入 |
+| Key | Game input |
 | --- | --- |
-| X / Return | A / 确认 |
-| Z / Backspace | B / 返回 |
+| X / Return | A / confirm |
+| Z / Backspace | B / back |
 | C / V | X / Y |
-| 方向键 | 十字键 |
-| WASD | 左摇杆 |
+| Arrow keys | D-pad |
+| WASD | Left stick |
 | Q / E | L / R |
 | 1 / 3 | ZL / ZR |
-| Tab / = | + / 暂停 |
-| - | −，练习中可按游戏规则跳过练习 |
+| Tab / = | + / pause |
+| - | −, skips practice according to the game's rules during practice |
 
-默认便携模式、1280×720。需要电视模式时，在宿主环境中设置 `NX_HANDHELD=0`；首次进入可能需要完成游戏的延迟校准。
+Handheld mode at 1280×720 by default. For TV mode, set `NX_HANDHELD=0` in the host environment; the first entry may require completing the game's latency calibration.
 
-## 当前状态与限制
+## Status and limitations
 
-0.2.0 已修复观察到的图集错位、文字残留、静音、帧率失控和存档追加问题。Mac 已检查首个单人关卡从练习到正式游戏、结算和返回的流程，常规约 60 fps；iPad 已完成启动和图像、音频输出检查，使用者手动体验后确认按基本可玩验收通过。
+0.2.0 fixed the observed atlas misalignment, leftover text, muted audio, runaway frame rate and save-append issues. On Mac, the first single-player stage has been checked from practice through the actual game, the results screen and the return, at roughly 60 fps; on iPad, launch plus video and audio output have been checked, and the user confirmed basic playability by hand.
 
-这不是完整兼容性承诺：全部关卡、多人、不同手柄、精确节奏输入延迟、后台恢复和长时间内存稳定性尚未全面验证。同步截图及首次加载会干扰帧时间和音频缓冲，不应把调试录音直接当作端到端音画延迟测量。
+This is not a full compatibility promise: all stages, multiplayer, different controllers, precise rhythm input latency, background resume and long-session memory stability have not been fully verified. Synchronized screenshots and the first load disturb frame timing and audio buffering, so debug recordings should not be treated as end-to-end audio/video latency measurements.
 
-本项目针对单个已识别构建，不是通用 Switch 模拟器，也没有承诺上游 Mush8 的联网或其他专用功能在这里可用。
+This project targets one identified build. It is not a general Switch emulator and makes no promise that upstream Mush8's networking or other special features work here.
 
-## 开发与目录
+## Development and layout
 
 ```sh
 ./build.sh test
-# 需要自己的本地游戏模块：
+# requires your own local game modules:
 ./target/release/nxpatch verify work/game/exefs/main work/game/exefs/sdk
 python3 tools/smoke.py --seconds 25
 ```
 
-进程持续运行只代表启动检查，需要结合画面、声音和操作结果判断可玩性。诊断开关和本地回放方式见 [开发说明](docs/DEVELOPMENT.md)。
+A process that keeps running only proves it started; judge playability together with what you see, hear and control. Diagnostic switches and local replay are described in the [development notes](docs/DEVELOPMENT.md) (in Chinese).
 
-| 目录 | 内容 |
+| Directory | Contents |
 | --- | --- |
-| `crates/nxabi` | 宿主与改写代码共享约定 |
-| `crates/nxfs` | 容器、文件系统和模块解析 |
-| `crates/nxpatch` | 离线 ARM64 改写与等价验证 |
-| `crates/nxscan` / `crates/nxshader` | 指令扫描、着色器翻译工具 |
-| `crates/nxhost` | 系统服务、音频、输入、NVN / Metal 兼容层 |
-| `launcher` / `ios` | 原生启动器和 iOS 工程配置 |
-| `tools` | 本地准备、构建、验证及源码发布检查 |
-| `third_party` | 需要随源码保留的第三方许可声明 |
+| `crates/nxabi` | Conventions shared by the host and the rewritten code |
+| `crates/nxfs` | Container, file system and module parsing |
+| `crates/nxpatch` | Offline ARM64 rewriting and equivalence verification |
+| `crates/nxscan` / `crates/nxshader` | Instruction scanning, shader translation tools |
+| `crates/nxhost` | System services, audio, input, NVN / Metal compatibility layer |
+| `launcher` / `ios` | Native launcher and iOS project configuration |
+| `tools` | Local preparation, build, verification and source release checks |
+| `third_party` | Third-party license notices that must ship with the source |
 
-`target/`、`work/` 和 `build/` 都是本地生成内容，不进入 Git。`target/` 可以删除，下次构建会重新生成；保留 `work/save/`，避免丢失命令行运行的存档。
+`target/`, `work/` and `build/` are all local generated content and never enter Git. `target/` can be deleted and will be regenerated on the next build; keep `work/save/` to avoid losing command-line saves.
 
-## 许可与声明
+## License and notices
 
-本项目以 **GPL-3.0** 发布，继承 Mush8 的许可证和原作者声明。nxnative 改编部分另保留 MIT 许可；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和 [来源说明](docs/PROVENANCE.md)。依赖项继续适用各自许可证。
+This project is released under **GPL-3.0**, inheriting Mush8's license and original author notices. The nxnative-derived portion additionally retains the MIT license; see [LICENSE](LICENSE), [NOTICE](NOTICE) and the [provenance notes](docs/PROVENANCE.md). Dependencies remain under their own licenses.
 
-本项目是独立的技术研究，与 Nintendo、Apple 或游戏权利人没有隶属、授权、赞助或认可关系。相关名称和商标仅用于识别兼容性。源码许可不涵盖游戏程序、图像、声音、字体、固件、密钥或其他第三方内容。
+This project is independent technical research and has no affiliation, authorization, sponsorship or endorsement relationship with Nintendo, Apple or the rights holders of the game. Names and trademarks are used only to identify compatibility. The source license does not cover the game program, images, sounds, fonts, firmware, keys or other third-party content.
 
-“技术分享”或免责声明不会自动消除版权、反规避、合同或商标方面的责任。请遵守适用法律、协议和第三方许可；软件按原许可证以“现状”提供，不作可玩性、无侵权或特定用途担保。源码发布范围见 [发布说明](docs/PUBLISHING.md)。
+"Technical sharing" or a disclaimer does not by itself remove copyright, anti-circumvention, contractual or trademark liability. Follow applicable law, agreements and third-party licenses; the software is provided "as is" under its licenses, without warranties of playability, non-infringement or fitness for a particular purpose. See the [publishing notes](docs/PUBLISHING.md) for the scope of the source release.
