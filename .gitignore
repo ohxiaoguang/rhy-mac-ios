@@ -50,3 +50,6 @@ xcuserdata/
 
 # Raw local reports may contain device IDs, signing details and host paths.
 /docs/local/
+
+# Local agent workspace / project memory never belongs in the repository.
+/.workbuddy/
